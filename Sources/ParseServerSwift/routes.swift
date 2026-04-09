@@ -144,10 +144,12 @@ public func exampleRoutes(_ app: Application) throws {
         // Return two custom scores instead.
         let score1 = GameScore(objectId: "yolo",
                                createdAt: Date(),
-                               points: 50)
+                               points: 50,
+                               playerName: "Jen")
         let score2 = GameScore(objectId: "nolo",
                                createdAt: Date(),
-                               points: 60)
+                               points: 60,
+                               playerName: "Alex")
         req.logger.info("""
             Returning custom objects to the user from Cloud Code instead of querying:
             \(score1); \(score2)

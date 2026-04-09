@@ -22,6 +22,7 @@ struct GameScore: ParseObject {
 
     // Your own properties.
     var points: Int?
+    var playerName: String?
 
     // Implement your own version of merge.
     func merge(with object: Self) throws -> Self {
@@ -29,6 +30,10 @@ struct GameScore: ParseObject {
         if updated.shouldRestoreKey(\.points,
                                      original: object) {
             updated.points = object.points
+        }
+        if updated.shouldRestoreKey(\.playerName,
+                                     original: object) {
+            updated.playerName = object.playerName
         }
         return updated
     }
