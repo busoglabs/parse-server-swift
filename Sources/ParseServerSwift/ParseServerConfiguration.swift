@@ -34,6 +34,10 @@ public struct ParseServerConfiguration {
     public internal(set) var parseServerURLStrings = [String]()
 
     /// The current address of ParseServerSwift.
+    /// This is the URL webhooks are registered under, so it must be reachable
+    /// by the Parse Server. Defaults to the bind address; behind a proxy or on
+    /// a PaaS (where the bind address is internal), set
+    /// **PARSE_SERVER_SWIFT_SERVER_URL** to the public URL instead.
     public internal(set) var serverPathname: String
 
     var hooks = Hooks()
@@ -69,7 +73,8 @@ public struct ParseServerConfiguration {
         // swiftlint:disable:next line_length
         app.routes.defaultMaxBodySize = ByteCount(stringLiteral: Environment.process.PARSE_SERVER_SWIFT_DEFAULT_MAX_BODY_SIZE ?? "16kb")
 
-        serverPathname = buildServerURL(from: app.http.server.configuration)
+        serverPathname = Environment.process.PARSE_SERVER_SWIFT_SERVER_URL
+            ?? buildServerURL(from: app.http.server.configuration)
         webhookKey = Environment.process.PARSE_SERVER_SWIFT_WEBHOOK_KEY
 
         let serverURLStrings = try getParseServerURLs()
@@ -118,7 +123,8 @@ public struct ParseServerConfiguration {
         app.http.server.configuration.port = port
         app.http.server.configuration.tlsConfiguration = tlsConfiguration
         app.routes.defaultMaxBodySize = maxBodySize
-        serverPathname = buildServerURL(from: app.http.server.configuration)
+        serverPathname = Environment.process.PARSE_SERVER_SWIFT_SERVER_URL
+            ?? buildServerURL(from: app.http.server.configuration)
 
         let serverURLStrings = try getParseServerURLs(parseServerURLString)
         primaryParseServerURLString = serverURLStrings.0
