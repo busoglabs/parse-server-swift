@@ -73,8 +73,7 @@ public struct ParseServerConfiguration {
         // swiftlint:disable:next line_length
         app.routes.defaultMaxBodySize = ByteCount(stringLiteral: Environment.process.PARSE_SERVER_SWIFT_DEFAULT_MAX_BODY_SIZE ?? "16kb")
 
-        serverPathname = Environment.process.PARSE_SERVER_SWIFT_SERVER_URL
-            ?? buildServerURL(from: app.http.server.configuration)
+        serverPathname = try Self.resolveServerPathname(for: app)
         webhookKey = Environment.process.PARSE_SERVER_SWIFT_WEBHOOK_KEY
 
         let serverURLStrings = try getParseServerURLs()
@@ -123,13 +122,33 @@ public struct ParseServerConfiguration {
         app.http.server.configuration.port = port
         app.http.server.configuration.tlsConfiguration = tlsConfiguration
         app.routes.defaultMaxBodySize = maxBodySize
-        serverPathname = Environment.process.PARSE_SERVER_SWIFT_SERVER_URL
-            ?? buildServerURL(from: app.http.server.configuration)
+        serverPathname = try Self.resolveServerPathname(for: app)
 
         let serverURLStrings = try getParseServerURLs(parseServerURLString)
         primaryParseServerURLString = serverURLStrings.0
         parseServerURLStrings.append(primaryParseServerURLString)
         parseServerURLStrings.append(contentsOf: serverURLStrings.1)
+    }
+
+    /// The URL webhooks are registered under: **PARSE_SERVER_SWIFT_SERVER_URL**
+    /// when set (validated — behind a proxy or on a PaaS the bind address is
+    /// unreachable, and a malformed value would silently kill every hook
+    /// registration), otherwise derived from the bind configuration.
+    private static func resolveServerPathname(for app: Application) throws -> String {
+        guard let advertised = Environment.process.PARSE_SERVER_SWIFT_SERVER_URL else {
+            return buildServerURL(from: app.http.server.configuration)
+        }
+        let trimmed = advertised.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: trimmed),
+              let scheme = url.scheme?.lowercased(),
+              scheme == "http" || scheme == "https",
+              url.host != nil else {
+            throw ParseError(
+                code: .otherCause,
+                message: "PARSE_SERVER_SWIFT_SERVER_URL must be a full http(s) URL; got \"\(advertised)\""
+            )
+        }
+        return trimmed
     }
 
 }
